@@ -49,7 +49,7 @@ const PS = {
   },
 };
 
-const mkStudent = g => ({name:"",guardian:"",guardianPhone:"",gender:g,notes:"",joinDate:nowDate(),payments:{}});
+const mkStudent = g => ({name:"",guardian:"",guardianPhone:"",gender:g,notes:"",joinDate:nowDate(),payments:{},subscriptionAmount:0});
 const mkSession = (sid="") => ({studentId:sid,date:nowDate(),present:true,newItems:[],revItems:[],grades:[],noNew:false,noRev:false,notMemorized:false,noGrade:false,notes:""});
 const mkItem = () => ({surah:"",from:"",to:""});
 const mkDay  = () => ({date:nowDate(),notes:""});
@@ -268,6 +268,7 @@ function EditModal({ editSt, setEditSt, onSave, filterMonth, toArShort }) {
           <div><label>رقم الجوال</label><input value={editSt.guardianPhone||""} onChange={e=>setEditSt({...editSt,guardianPhone:e.target.value})}/></div>
           <div><label>تاريخ الالتحاق</label><input type="date" value={editSt.joinDate||""} onChange={e=>setEditSt({...editSt,joinDate:e.target.value})}/></div>
           <div><label>ملاحظات</label><textarea rows={2} value={editSt.notes||""} onChange={e=>setEditSt({...editSt,notes:e.target.value})} placeholder="مستواه، ملاحظات خاصة..."/></div>
+          <div><label>قيمة الاشتراك الشهري (جنيه)</label><input type="number" min="0" placeholder="0" value={editSt.subscriptionAmount||""} onChange={e=>setEditSt({...editSt,subscriptionAmount:Number(e.target.value)})}/></div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button className="btn-gold" onClick={onSave}>حفظ</button>
@@ -289,6 +290,7 @@ function AddStudentModal({ sec, newSt, setNewSt, onSave, onClose }) {
           <div><label>رقم الجوال</label><input value={newSt.guardianPhone||""} onChange={e=>setNewSt({...newSt,guardianPhone:e.target.value})}/></div>
           <div><label>تاريخ الالتحاق</label><input type="date" value={newSt.joinDate} onChange={e=>setNewSt({...newSt,joinDate:e.target.value})}/></div>
           <div><label>ملاحظات</label><textarea rows={2} value={newSt.notes||""} onChange={e=>setNewSt({...newSt,notes:e.target.value})} placeholder="مستواه، ملاحظات..."/></div>
+          <div><label>قيمة الاشتراك الشهري (جنيه)</label><input type="number" min="0" placeholder="0" value={newSt.subscriptionAmount||""} onChange={e=>setNewSt({...newSt,subscriptionAmount:Number(e.target.value)})}/></div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button className="btn-gold" onClick={onSave}>إضافة</button>
@@ -568,7 +570,8 @@ export default function App() {
 
   const monthlyStats = useMemo(() => {
     const paid = students.filter(s=>isPaid(s)).length;
-    return {total:students.length, paid, unpaid:students.length-paid};
+    const totalRevenue = students.filter(s=>isPaid(s)).reduce((sum,s)=>sum+(s.subscriptionAmount||0),0);
+    return {total:students.length, paid, unpaid:students.length-paid, totalRevenue};
   }, [students, filterMonth]);
 
   // ── CRUD ─────────────────────────────────────────
@@ -711,6 +714,7 @@ export default function App() {
               </div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"flex-start"}}>
                 <span className={`bx ${paid?"bx-g":"bx-r"}`}>{paid?"✓ مدفوع "+toArShort(filterMonth):"✗ غير مدفوع "+toArShort(filterMonth)}</span>
+                {st.subscriptionAmount>0&&<span className="bx bx-y">💳 {st.subscriptionAmount.toLocaleString()} ج/شهر</span>}
                 <button className="btn-out" style={{fontSize:11,padding:"5px 10px"}} onClick={()=>togglePaid(st)}>{paid?"إلغاء الدفع":"تسجيل الدفع"}</button>
                 <button className="btn-out" style={{fontSize:11,padding:"5px 10px"}} onClick={()=>setEditSt({...st})}>✏️ تعديل</button>
                 <button className="btn-gold" style={{fontSize:11,padding:"5px 10px"}} onClick={()=>setReportSt(st)}>📋 تقرير</button>
@@ -796,7 +800,7 @@ export default function App() {
               <span style={{fontSize:11,color:"#6a8090"}}>{toArShort(filterMonth)}</span>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(135px,1fr))",gap:12,marginBottom:18}}>
-              {[{i:"👥",v:monthlyStats.total,l:"إجمالي الطلبة",s:"هذا الشهر",c:sc.c},{i:"✅",v:days.filter(d=>monthKey(d.date)===filterMonth).length,l:"أيام التدريس",s:"هذا الشهر",c:"#4caf7d"},{i:"💰",v:monthlyStats.paid,l:"دفعوا الاشتراك",s:toArShort(filterMonth),c:"#4caf7d"},{i:"⚠️",v:monthlyStats.unpaid,l:"لم يدفعوا",s:toArShort(filterMonth),c:"#e05c5c"}].map(x=>(
+              {[{i:"👥",v:monthlyStats.total,l:"إجمالي الطلبة",s:"هذا الشهر",c:sc.c},{i:"✅",v:days.filter(d=>monthKey(d.date)===filterMonth).length,l:"أيام التدريس",s:"هذا الشهر",c:"#4caf7d"},{i:"💰",v:monthlyStats.paid,l:"دفعوا الاشتراك",s:toArShort(filterMonth),c:"#4caf7d"},{i:"⚠️",v:monthlyStats.unpaid,l:"لم يدفعوا",s:toArShort(filterMonth),c:"#e05c5c"},{i:"🏦",v:`${monthlyStats.totalRevenue.toLocaleString()} ج`,l:"إجمالي الاشتراكات",s:toArShort(filterMonth),c:"#c9a84c"}].map(x=>(
                 <div key={x.l} style={{background:"linear-gradient(135deg,#1a2535,#1f2d40)",border:"1px solid #2a3a50",borderRadius:11,padding:16,textAlign:"center"}}>
                   <div style={{fontSize:24,marginBottom:6}}>{x.i}</div>
                   <div style={{fontSize:22,fontWeight:700,color:x.c}}>{x.v}</div>
@@ -823,6 +827,35 @@ export default function App() {
                     );
                   })}
             </div>
+            {/* Monthly revenue breakdown */}
+            {(() => {
+              const allMonths = [...new Set(students.flatMap(st=>Object.keys(st.payments||{})))].sort().reverse().slice(0,6);
+              if(allMonths.length===0) return null;
+              return (
+                <>
+                  <div style={{fontSize:12,color:"#a0b0c0",fontWeight:600,margin:"18px 0 8px"}}>إجمالي الاشتراكات المحصّلة (آخر ٦ أشهر)</div>
+                  <div className="card" style={{overflow:"hidden"}}>
+                    {allMonths.map(m=>{
+                      const paidSts = students.filter(st=>st.payments?.[m]);
+                      const rev = paidSts.reduce((sum,st)=>sum+(st.subscriptionAmount||0),0);
+                      const pct = students.length>0?Math.round((paidSts.length/students.length)*100):0;
+                      return (
+                        <div key={m} style={{padding:"11px 16px",borderBottom:"1px solid #2a3a50",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                          <div>
+                            <div style={{fontSize:13,fontWeight:600,color:"#c9a84c"}}>{toArShort(m)}</div>
+                            <div style={{fontSize:11,color:"#6a8090"}}>{paidSts.length} طالب دفعوا · {pct}%</div>
+                          </div>
+                          <div style={{textAlign:"left"}}>
+                            <div style={{fontSize:15,fontWeight:700,color:"#4caf7d"}}>{rev.toLocaleString()} ج</div>
+                            <div style={{fontSize:10,color:"#6a8090",textAlign:"center"}}>إجمالي</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </>}
 
           {/* ─ STUDENTS ─ */}
@@ -850,6 +883,7 @@ export default function App() {
                       </div>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                         <span className={`bx ${paid?"bx-g":"bx-r"}`}>{paid?"✓ مدفوع":"✗ غير مدفوع"}</span>
+                        {student.subscriptionAmount>0&&<span className="bx bx-y">{student.subscriptionAmount.toLocaleString()} ج</span>}
                         <button className="btn-out" style={{fontSize:11,padding:"4px 10px"}} onClick={()=>togglePaid(student)}>{paid?"إلغاء":"دفع"}</button>
                         <button className="btn-out" style={{fontSize:11,padding:"4px 10px"}} onClick={()=>setEditSt({...student})}>✏️</button>
                         <button className="btn-red" style={{fontSize:11,padding:"4px 10px"}} onClick={()=>delStudent(student.id)}>🗑️</button>
