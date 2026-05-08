@@ -345,6 +345,9 @@ function ReportModal({ student, sessions, sc, filterMonth, onClose, onExportPDF 
   const presSess = stSess.filter(ss=>ss.present);
   const rate     = stSess.length>0?Math.round((s.present/stSess.length)*100):0;
   const paid     = !!(student.payments?.[filterMonth]);
+  const mDisp    = toArShort(filterMonth);
+  const defaultLetter = `السلام عليكم ورحمة الله وبركاته،\nيسعد مركز الإتقان أن يُطلعكم على تقرير ${student.gender==="female"?"ابنتكم":"نجلكم"} ${student.name} لشهر ${mDisp}.\n${rate>=80?"أبدى حضوراً منتظماً ومتميزاً يستحق الإشادة.":rate>=50?"الحضور متوسط ونأمل تحسينه.":"نأمل الاهتمام بانتظام الحضور."}${s.memorized>0?` تميّز بالحفظ في (${s.memorized}) جلسة.`:""}${s.notMemorized>0?` وكان بحاجة لمراجعة في (${s.notMemorized}) جلسة.`:""}${student.notes?`\nملاحظة: ${student.notes}`:""}\n\nنسأل الله أن يبارك في جهوده.\nجزاكم الله خيراً.`;
+  const [letter, setLetter] = useState(defaultLetter);
   return (
     <div className="ov" onClick={onClose}>
       <div className="modal" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
@@ -396,8 +399,17 @@ function ReportModal({ student, sessions, sc, filterMonth, onClose, onExportPDF 
             </div>
           </div>
         )}
+        <div className="rpt" style={{borderRight:"3px solid #c9a84c"}}>
+          <div style={{fontSize:11,color:"#c9a84c",fontWeight:700,marginBottom:8}}>✏️ رسالة لولي الأمر — قابلة للتعديل</div>
+          <textarea
+            value={letter}
+            onChange={e=>setLetter(e.target.value)}
+            rows={7}
+            style={{width:"100%",background:"#141e2b",border:"1px solid #2a3a50",color:"#e8dcc8",borderRadius:8,padding:"10px 12px",fontFamily:"'Amiri',serif",fontSize:13,lineHeight:1.9,resize:"vertical",outline:"none"}}
+          />
+        </div>
         <div style={{display:"flex",gap:8,marginTop:14}}>
-          <button className="btn-gold" onClick={()=>onExportPDF(student)}>📄 تصدير PDF</button>
+          <button className="btn-gold" onClick={()=>onExportPDF(student, letter)}>📄 تصدير PDF</button>
           <button className="btn-out" onClick={onClose}>إغلاق</button>
         </div>
       </div>
@@ -406,7 +418,7 @@ function ReportModal({ student, sessions, sc, filterMonth, onClose, onExportPDF 
 }
 
 // ─── PDF EXPORT (pure function, no hooks) ────────────────────────────────────
-function buildAndPrintPDF(student, sessions, sc, filterMonth) {
+function buildAndPrintPDF(student, sessions, sc, filterMonth, customLetter=null) {
   const getStats = (id, month) => {
     let ss = sessions.filter(s=>s.studentId===id);
     if(month) ss=ss.filter(s=>monthKey(s.date)===month);
@@ -467,13 +479,9 @@ ${pSess.length>0?`<div class="sec"><h3>تفاصيل الحصص</h3><table>
   </tr>`).join("")}
 </table></div>`:""}
 <div class="sec"><h3>رسالة لولي الأمر</h3><div class="letter">
-  السلام عليكم ورحمة الله وبركاته،<br/>
-  يسعد مركز الإتقان أن يُطلعكم على تقرير ${student.gender==="female"?"ابنتكم":"نجلكم"} <strong>${student.name}</strong> لشهر ${mDisp}.<br/>
-  ${rate>=80?"أبدى حضوراً منتظماً ومتميزاً يستحق الإشادة.":rate>=50?"الحضور متوسط ونأمل تحسينه.":"نأمل الاهتمام بانتظام الحضور."}
-  ${s.memorized>0?` تميّز بالحفظ في (${s.memorized}) جلسة.`:""}
-  ${s.notMemorized>0?` وكان بحاجة لمراجعة في (${s.notMemorized}) جلسة.`:""}
-  ${student.notes?`<br/>ملاحظة: ${student.notes}`:""}
-  <br/><br/>نسأل الله أن يبارك في جهوده.<br/>جزاكم الله خيراً.
+  ${(customLetter || (
+    `السلام عليكم ورحمة الله وبركاته،\nيسعد مركز الإتقان أن يُطلعكم على تقرير ${student.gender==="female"?"ابنتكم":"نجلكم"} ${student.name} لشهر ${mDisp}.\n${rate>=80?"أبدى حضوراً منتظماً.":rate>=50?"الحضور متوسط.":"نأمل الاهتمام بالحضور."}\n\nنسأل الله أن يبارك في جهوده.\nجزاكم الله خيراً.`
+  )).replace(/\n/g,"<br/>")}
 </div></div>
 <div class="footer">مركز الإتقان · ${sc.lbl} · ${today}</div>
 </body></html>`;
@@ -668,7 +676,7 @@ export default function App() {
           })}
         </div>
         {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
-        {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={s=>buildAndPrintPDF(s,sessions,sc,filterMonth)}/>}
+        {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
       </div>
     );
   }
@@ -735,7 +743,7 @@ export default function App() {
         </div>
         {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
         {editSt&&<EditModal editSt={editSt} setEditSt={setEditSt} onSave={saveEdit} filterMonth={filterMonth} toArShort={toArShort}/>}
-        {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={s=>buildAndPrintPDF(s,sessions,sc,filterMonth)}/>}
+        {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
       </div>
     );
   }
@@ -965,7 +973,7 @@ export default function App() {
       {showAddDay&&<AddDayModal dayForm={dayForm} setDayForm={setDayForm} studentCount={students.length} onSave={addDay} onClose={()=>setShowAddDay(false)}/>}
       {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
       {editSt&&<EditModal editSt={editSt} setEditSt={setEditSt} onSave={saveEdit} filterMonth={filterMonth} toArShort={toArShort}/>}
-      {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={s=>buildAndPrintPDF(s,sessions,sc,filterMonth)}/>}
+      {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
     </div>
   );
 }
