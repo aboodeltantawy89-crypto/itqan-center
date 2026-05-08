@@ -451,14 +451,14 @@ function buildAndPrintPDF(student, sessions, sc, filterMonth, customLetter=null)
 
   const html=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <style>@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');${PDF_CSS}</style></head><body>
+<div style="text-align:center;margin-bottom:10px">
+  <img src="/logo_-_white.png" style="height:80px;filter:invert(1)" onerror="this.style.display='none'"/>
+</div>
 <h1>مركز الإتقان لتحفيظ القرآن الكريم</h1>
 <div class="sub">التقرير الشهري: ${mDisp} | الإصدار: ${today}</div>
 <div class="sec"><h3>بيانات الطالب</h3><div class="g2">
   <div class="fld"><div class="k">الاسم</div><div class="v">${student.name}</div></div>
-  <div class="fld"><div class="k">ولي الأمر</div><div class="v">${student.guardian||"—"}</div></div>
-  <div class="fld"><div class="k">رقم التواصل</div><div class="v">${student.guardianPhone||"—"}</div></div>
   <div class="fld"><div class="k">اشتراك ${mDisp}</div><div class="v" style="color:${paid?"#2d7a4f":"#c0392b"}">${paid?"✓ مدفوع":"✗ غير مدفوع"}</div></div>
-  <div class="fld"><div class="k">تاريخ الالتحاق</div><div class="v">${student.joinDate?toAr(student.joinDate):"—"}</div></div>
   <div class="fld"><div class="k">إجمالي الحصص</div><div class="v">${allS.total} حصة</div></div>
 </div></div>
 <div class="sec"><h3>إحصائيات ${mDisp}</h3><div class="g4" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
@@ -758,7 +758,7 @@ export default function App() {
       {/* Header */}
       <div style={{background:"linear-gradient(135deg,#1a2535,#0f1923)",borderBottom:"1px solid #2a3a50",padding:"13px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:24}}>🕌</div>
+          <img src="/logo_-_white.png" style={{height:44,filter:"brightness(0) invert(1)",opacity:0.9}} onError={e=>e.target.style.display="none"}/>
           <div>
             <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c"}}>مركز الإتقان · متابعة الحلقات</div>
             <div style={{fontSize:11,color:"#6a8090"}}>تحفيظ القرآن الكريم</div>
