@@ -477,9 +477,16 @@ ${pSess.length>0?`<div class="sec"><h3>تفاصيل الحصص</h3><table>
 </div></div>
 <div class="footer">مركز الإتقان · ${sc.lbl} · ${today}</div>
 </body></html>`;
-  const win=window.open("","_blank");
-  win.document.write(html); win.document.close();
-  setTimeout(()=>win.print(),700);
+  const blob = new Blob([html], {type: "text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
