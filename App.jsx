@@ -91,7 +91,9 @@ label{font-size:12px;color:#a0b0c0;margin-bottom:4px;display:block}
 `;
 
 const PDF_CSS = `
-body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;padding:28px 32px;font-size:13px}
+@page{margin:1.5cm;size:A4}
+@media print{head,header,footer{display:none!important}}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#111;padding:28px 32px;font-size:13px;-webkit-print-color-adjust:exact}
 h1{font-family:'Amiri',serif;color:#7a5200;font-size:22px;text-align:center;margin-bottom:3px}
 .sub{text-align:center;color:#777;font-size:12px;margin-bottom:18px}
 .sec{background:#faf6ee;border-radius:8px;padding:14px;margin-bottom:12px;border-right:4px solid #c9a84c}
@@ -450,7 +452,7 @@ function buildAndPrintPDF(student, sessions, sc, filterMonth, customLetter=null)
   const html=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <style>@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');${PDF_CSS}</style></head><body>
 <h1>مركز الإتقان لتحفيظ القرآن الكريم</h1>
-<div class="sub">${sc.lbl} | التقرير الشهري: ${mDisp} | الإصدار: ${today}</div>
+<div class="sub">التقرير الشهري: ${mDisp} | الإصدار: ${today}</div>
 <div class="sec"><h3>بيانات الطالب</h3><div class="g2">
   <div class="fld"><div class="k">الاسم</div><div class="v">${student.name}</div></div>
   <div class="fld"><div class="k">ولي الأمر</div><div class="v">${student.guardian||"—"}</div></div>
@@ -483,7 +485,7 @@ ${pSess.length>0?`<div class="sec"><h3>تفاصيل الحصص</h3><table>
     `السلام عليكم ورحمة الله وبركاته،\nيسعد مركز الإتقان أن يُطلعكم على تقرير ${student.gender==="female"?"ابنتكم":"نجلكم"} ${student.name} لشهر ${mDisp}.\n${rate>=80?"أبدى حضوراً منتظماً.":rate>=50?"الحضور متوسط.":"نأمل الاهتمام بالحضور."}\n\nنسأل الله أن يبارك في جهوده.\nجزاكم الله خيراً.`
   )).replace(/\n/g,"<br/>")}
 </div></div>
-<div class="footer">مركز الإتقان · ${sc.lbl} · ${today}</div>
+<div class="footer">مركز الإتقان لتحفيظ القرآن الكريم · ${today}</div>
 </body></html>`;
   const blob = new Blob([html], {type: "text/html;charset=utf-8"});
   const url = URL.createObjectURL(blob);
