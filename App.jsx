@@ -502,21 +502,45 @@ ${pSess.length>0?`<div class="sec"><h3>تفاصيل الحصص</h3><table>
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-const PASS_KEY = "itq_auth_pass";
-const DEFAULT_PASS = "itqan_tantawy2026";
-const RECOVERY_EMAIL = "aboodtantawy89@gmail.com";
-const SESSION_KEY = "itq_session";
+const PASS_KEY        = "itq_auth_pass";
+const DEFAULT_PASS    = "itqan_tantawy2026";
+const RECOVERY_EMAIL  = "aboodtantawy89@gmail.com";
+const SESSION_KEY     = "itq_session";
+const EJS_SVC         = "service_dkvuqsc";
+const EJS_TPL         = "template_v4ph01k";
+const EJS_PUB         = "senH8D9_Fk1fJTXcy";
+
+// Load EmailJS SDK once
+if (!window._ejsLoaded) {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
+  s.onload = () => { window.emailjs.init(EJS_PUB); window._ejsLoaded = true; };
+  document.head.appendChild(s);
+}
+
+function genOTP() { return String(Math.floor(100000 + Math.random() * 900000)); }
 
 function LoginScreen({ onLogin }) {
-  const [input,    setInput]    = useState("");
-  const [error,    setError]    = useState("");
-  const [mode,     setMode]     = useState("login"); // login | forgot | change
-  const [newPass,  setNewPass]  = useState("");
-  const [newPass2, setNewPass2] = useState("");
-  const [msg,      setMsg]      = useState("");
-  const [showP,    setShowP]    = useState(false);
+  const [input,     setInput]     = useState("");
+  const [error,     setError]     = useState("");
+  const [mode,      setMode]      = useState("login"); // login | change_req | otp | change_pass
+  const [newPass,   setNewPass]   = useState("");
+  const [newPass2,  setNewPass2]  = useState("");
+  const [otpInput,  setOtpInput]  = useState("");
+  const [otpData,   setOtpData]   = useState(null); // {code, expires}
+  const [sending,   setSending]   = useState(false);
+  const [msg,       setMsg]       = useState("");
+  const [showP,     setShowP]     = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const storedPass = () => LS.get(PASS_KEY, DEFAULT_PASS);
+
+  // countdown timer
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
   const handleLogin = () => {
     if (input === storedPass()) {
@@ -528,85 +552,128 @@ function LoginScreen({ onLogin }) {
     }
   };
 
-  const handleForgot = () => {
-    const masked = RECOVERY_EMAIL.replace(/(.{2}).+(@.+)/, "$1•••$2");
-    setMsg(`تم إرسال رمز الاسترداد إلى ${masked} — يُرجى مراجعة بريدك الإلكتروني.`);
-    // In a real app you'd call an API; here we just show the email hint
+  const sendOTP = async () => {
+    setSending(true); setError(""); setMsg("");
+    const code = genOTP();
+    const expires = Date.now() + 10 * 60 * 1000; // 10 min
+    try {
+      await window.emailjs.send(EJS_SVC, EJS_TPL, {
+        to_email: RECOVERY_EMAIL,
+        otp_code: code,
+      });
+      setOtpData({ code, expires });
+      setMode("otp");
+      setCountdown(600);
+      const masked = RECOVERY_EMAIL.replace(/(.{2}).+(@.+)/, "$1•••$2");
+      setMsg(`تم إرسال رمز التحقق إلى ${masked}`);
+    } catch (e) {
+      setError("❌ فشل إرسال الإيميل، تحقق من الاتصال وحاول مرة أخرى");
+    }
+    setSending(false);
   };
 
-  const handleChange = () => {
+  const verifyOTP = () => {
+    if (!otpData) return setError("حدث خطأ، أعد الإرسال");
+    if (Date.now() > otpData.expires) return setError("❌ انتهت صلاحية الرمز، أعد الإرسال");
+    if (otpInput.trim() !== otpData.code) return setError("❌ الرمز غير صحيح");
+    setError(""); setMode("change_pass");
+  };
+
+  const handleChangePass = () => {
     if (!newPass) return setError("أدخل الرقم السري الجديد");
     if (newPass.length < 6) return setError("يجب أن يكون ٦ أحرف على الأقل");
-    if (newPass !== newPass2) return setError("كلمتا المرور غير متطابقتين");
+    if (newPass !== newPass2) return setError("❌ كلمتا المرور غير متطابقتين");
     LS.set(PASS_KEY, newPass);
     setMsg("✅ تم تغيير الرقم السري بنجاح!");
-    setTimeout(() => setMode("login"), 1500);
-    setNewPass(""); setNewPass2(""); setError("");
+    setOtpData(null); setNewPass(""); setNewPass2(""); setError("");
+    setTimeout(() => { setMode("login"); setMsg(""); }, 2000);
   };
+
+  const goLogin = () => { setMode("login"); setError(""); setMsg(""); setOtpInput(""); setOtpData(null); };
+
+  const Logo = () => (
+    <div style={{textAlign:"center",marginBottom:28}}>
+      <div style={{fontSize:44,marginBottom:6}}>📖</div>
+      <div style={{fontFamily:"'Amiri',serif",fontSize:24,color:"#c9a84c",fontWeight:700}}>مركز الإتقان</div>
+      <div style={{fontSize:12,color:"#6a8090",marginTop:3}}>لتحفيظ القرآن الكريم</div>
+    </div>
+  );
 
   return (
     <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:"'Cairo',sans-serif"}}>
       <style>{CSS}</style>
       <div style={{width:"100%",maxWidth:380}}>
-        {/* Logo */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:48,marginBottom:8}}>📖</div>
-          <div style={{fontFamily:"'Amiri',serif",fontSize:26,color:"#c9a84c",fontWeight:700}}>مركز الإتقان</div>
-          <div style={{fontSize:13,color:"#6a8090",marginTop:4}}>لتحفيظ القرآن الكريم</div>
-        </div>
-
+        <Logo />
         <div className="card" style={{padding:24}}>
+
+          {/* ── LOGIN ── */}
           {mode === "login" && <>
             <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:20,textAlign:"center"}}>🔐 تسجيل الدخول</div>
             <div style={{marginBottom:12}}>
               <label>الرقم السري</label>
               <div style={{position:"relative"}}>
-                <input
-                  type={showP?"text":"password"}
-                  value={input}
+                <input type={showP?"text":"password"} value={input}
                   onChange={e=>{setInput(e.target.value);setError("");}}
                   onKeyDown={e=>e.key==="Enter"&&handleLogin()}
-                  placeholder="أدخل الرقم السري"
-                  style={{paddingLeft:36}}
-                  autoFocus
-                />
-                <span onClick={()=>setShowP(!showP)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",cursor:"pointer",fontSize:16,color:"#6a8090",userSelect:"none"}}>{showP?"🙈":"👁️"}</span>
+                  placeholder="أدخل الرقم السري" style={{paddingLeft:36}} autoFocus/>
+                <span onClick={()=>setShowP(!showP)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",cursor:"pointer",fontSize:15,color:"#6a8090",userSelect:"none"}}>{showP?"🙈":"👁️"}</span>
               </div>
             </div>
             {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
             <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleLogin}>دخول</button>
             <div style={{textAlign:"center",marginTop:14}}>
-              <span onClick={()=>{setMode("forgot");setError("");setMsg("");}} style={{fontSize:12,color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>نسيت الرقم السري؟</span>
-              <span style={{color:"#3a4a60",margin:"0 8px"}}>|</span>
-              <span onClick={()=>{setMode("change");setError("");setMsg("");}} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>تغيير الرقم السري</span>
+              <span onClick={()=>{setMode("change_req");setError("");setMsg("");}} style={{fontSize:12,color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>تغيير الرقم السري</span>
             </div>
           </>}
 
-          {mode === "forgot" && <>
-            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:16,textAlign:"center"}}>📧 استرداد الرقم السري</div>
-            <div style={{fontSize:13,color:"#a0b0c0",lineHeight:1.8,marginBottom:16,textAlign:"center"}}>سيتم إرسال تعليمات الاسترداد إلى البريد الإلكتروني المسجل.</div>
-            {msg
-              ? <div style={{background:"rgba(76,175,125,.1)",border:"1px solid rgba(76,175,125,.3)",borderRadius:8,padding:12,fontSize:13,color:"#4caf7d",textAlign:"center",lineHeight:1.8}}>{msg}</div>
-              : <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleForgot}>إرسال رابط الاسترداد</button>
-            }
+          {/* ── REQUEST OTP ── */}
+          {mode === "change_req" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:12,textAlign:"center"}}>🔑 تغيير الرقم السري</div>
+            <div style={{fontSize:13,color:"#a0b0c0",lineHeight:1.9,marginBottom:18,textAlign:"center",background:"#0f1923",borderRadius:8,padding:"10px 14px"}}>
+              سيتم إرسال رمز تحقق إلى بريدك الإلكتروني للتأكيد قبل تغيير الرقم السري.
+            </div>
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={sendOTP} disabled={sending}>
+              {sending ? "⏳ جاري الإرسال..." : "📧 إرسال رمز التحقق"}
+            </button>
             <div style={{textAlign:"center",marginTop:14}}>
-              <span onClick={()=>{setMode("login");setMsg("");}} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع لتسجيل الدخول</span>
+              <span onClick={goLogin} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع</span>
             </div>
           </>}
 
-          {mode === "change" && <>
-            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:16,textAlign:"center"}}>🔑 تغيير الرقم السري</div>
+          {/* ── ENTER OTP ── */}
+          {mode === "otp" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:12,textAlign:"center"}}>📩 أدخل رمز التحقق</div>
+            {msg && <div style={{background:"rgba(76,175,125,.1)",border:"1px solid rgba(76,175,125,.3)",borderRadius:8,padding:"9px 12px",fontSize:12,color:"#4caf7d",textAlign:"center",marginBottom:14}}>{msg}</div>}
+            <div style={{marginBottom:12}}>
+              <label>الرمز المرسل إلى إيميلك (6 أرقام)</label>
+              <input type="text" value={otpInput} onChange={e=>{setOtpInput(e.target.value);setError("");}}
+                onKeyDown={e=>e.key==="Enter"&&verifyOTP()}
+                placeholder="مثال: 482951" maxLength={6} style={{textAlign:"center",fontSize:20,letterSpacing:6}} autoFocus/>
+            </div>
+            {countdown > 0 && <div style={{fontSize:11,color:"#6a8090",textAlign:"center",marginBottom:10}}>
+              ⏱ الرمز صالح لـ {Math.floor(countdown/60)}:{String(countdown%60).padStart(2,"0")}
+            </div>}
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={verifyOTP}>تحقق من الرمز</button>
+            <div style={{textAlign:"center",marginTop:12,display:"flex",justifyContent:"center",gap:16}}>
+              <span onClick={sendOTP} style={{fontSize:12,color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>إعادة الإرسال</span>
+              <span onClick={goLogin} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع</span>
+            </div>
+          </>}
+
+          {/* ── NEW PASSWORD ── */}
+          {mode === "change_pass" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:16,textAlign:"center"}}>✅ أدخل الرقم السري الجديد</div>
             <div style={{display:"grid",gap:12,marginBottom:12}}>
               <div><label>الرقم السري الجديد</label><input type="password" value={newPass} onChange={e=>{setNewPass(e.target.value);setError("");}} placeholder="٦ أحرف على الأقل"/></div>
               <div><label>تأكيد الرقم السري</label><input type="password" value={newPass2} onChange={e=>{setNewPass2(e.target.value);setError("");}} placeholder="أعد كتابة الرقم السري"/></div>
             </div>
             {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
-            {msg   && <div style={{color:"#4caf7d",fontSize:12,marginBottom:10,textAlign:"center"}}>{msg}</div>}
-            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleChange}>حفظ الرقم السري الجديد</button>
-            <div style={{textAlign:"center",marginTop:14}}>
-              <span onClick={()=>{setMode("login");setError("");setMsg("");}} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع لتسجيل الدخول</span>
-            </div>
+            {msg   && <div style={{color:"#4caf7d",fontSize:13,marginBottom:10,textAlign:"center"}}>{msg}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleChangePass}>حفظ الرقم السري الجديد</button>
           </>}
+
         </div>
         <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#3a4a60"}}>مركز الإتقان © {new Date().getFullYear()}</div>
       </div>
