@@ -510,12 +510,24 @@ const EJS_SVC         = "service_dkvuqsc";
 const EJS_TPL         = "template_v4ph01k";
 const EJS_PUB         = "senH8D9_Fk1fJTXcy";
 
-// Load EmailJS SDK once
-if (!window._ejsLoaded) {
-  const s = document.createElement("script");
-  s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
-  s.onload = () => { window.emailjs.init(EJS_PUB); window._ejsLoaded = true; };
-  document.head.appendChild(s);
+// Load EmailJS SDK on demand
+function loadEmailJS() {
+  return new Promise((resolve, reject) => {
+    if (window._ejsLoaded && window.emailjs) { resolve(); return; }
+    const existing = document.getElementById("emailjs-sdk");
+    if (existing) {
+      const wait = setInterval(() => {
+        if (window.emailjs) { clearInterval(wait); window.emailjs.init(EJS_PUB); window._ejsLoaded = true; resolve(); }
+      }, 100);
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "emailjs-sdk";
+    s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
+    s.onload = () => { window.emailjs.init(EJS_PUB); window._ejsLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error("فشل تحميل EmailJS"));
+    document.head.appendChild(s);
+  });
 }
 
 function genOTP() { return String(Math.floor(100000 + Math.random() * 900000)); }
@@ -555,8 +567,9 @@ function LoginScreen({ onLogin }) {
   const sendOTP = async () => {
     setSending(true); setError(""); setMsg("");
     const code = genOTP();
-    const expires = Date.now() + 10 * 60 * 1000; // 10 min
+    const expires = Date.now() + 10 * 60 * 1000;
     try {
+      await loadEmailJS();
       await window.emailjs.send(EJS_SVC, EJS_TPL, {
         to_email: RECOVERY_EMAIL,
         otp_code: code,
