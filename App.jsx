@@ -454,7 +454,7 @@ function buildAndPrintPDF(student, sessions, sc, filterMonth, customLetter=null)
   const html=`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <style>@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');${PDF_CSS}</style></head><body>
 <div style="text-align:center;margin-bottom:10px">
-  <img src="/logo_-_white.png" style="height:80px;filter:invert(1)" onerror="this.style.display='none'"/>
+  <img src="/logo - white.png" style="height:80px;filter:invert(1)" onerror="this.style.display='none'"/>
 </div>
 <h1>مركز الإتقان لتحفيظ القرآن الكريم</h1>
 <div class="sub">التقرير الشهري: ${mDisp} | الإصدار: ${today}</div>
@@ -958,7 +958,7 @@ export default function App() {
       {/* Header */}
       <div style={{background:"linear-gradient(135deg,#1a2535,#0f1923)",borderBottom:"1px solid #2a3a50",padding:"13px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo_-_white.png" style={{height:70,filter:"brightness(0) invert(1)",opacity:0.9}} onError={e=>e.target.style.display="none"}/>
+          <img src="/logo - white.png" style={{height:44,filter:"brightness(0) invert(1)",opacity:0.9}} onError={e=>e.target.style.display="none"}/>
           <div>
             <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c"}}>مركز الإتقان · متابعة الحلقات</div>
             <div style={{fontSize:11,color:"#6a8090"}}>تحفيظ القرآن الكريم</div>
