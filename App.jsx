@@ -119,12 +119,12 @@ function SessDetails({ s }) {
   return (
     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:5}}>
       {s.noNew && <div style={{fontSize:12,color:"#e05c5c"}}>📗 لا يوجد حفظ جديد</div>}
-      {s.notMemorized && <div style={{fontSize:12,color:"#e8a84c"}}>📗 لم يحفظ</div>}
+      {s.notMemorized && <div style={{fontSize:12,color:"#e8a84c"}}>📗 لم يحفظ الجديد</div>}
       {!s.noNew&&!s.notMemorized&&(s.newItems||[]).filter(it=>it.surah).map((it,i)=>(
         <div key={i} style={{fontSize:12}}>📗 {it.surah}{it.from?` (${it.from}–${it.to})`:""}</div>
       ))}
       {s.noRev && <div style={{fontSize:12,color:"#e05c5c"}}>🔄 لا يوجد مراجعة</div>}
-      {s.notMemorizedRev && <div style={{fontSize:12,color:"#e8a84c"}}>🔄 لم يحفظ للمراجعة</div>}
+      {s.notMemorizedRev && <div style={{fontSize:12,color:"#e8a84c"}}>🔄 لم يحفظ المراجعة</div>}
       {!s.noRev&&(s.revItems||[]).filter(it=>it.surah).map((it,i)=>(
         <div key={i} style={{fontSize:12}}>🔄 {it.surah}{it.from?` (${it.from}–${it.to})`:""}</div>
       ))}
