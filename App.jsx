@@ -166,7 +166,7 @@ function ItemRows({ field, sessForm, setSessForm }) {
             <button type="button" className={`tog ${isNotMem?"on-o":""}`} onClick={()=>setNotMem(!isNotMem)}>لم يحفظ</button>
           )}
           {field==="revItems" && (
-            <button type="button" className={`tog ${isNotMemRev?"on-o":""}`} onClick={()=>setNotMemRev(!isNotMemRev)}>لم يحفظ للمراجعة</button>
+            <button type="button" className={`tog ${isNotMemRev?"on-o":""}`} onClick={()=>setNotMemRev(!isNotMemRev)}>لم يحفظ</button>
           )}
           {!isNone&&!isNotMem && (
             <button type="button" onClick={addItem} style={{background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:6,padding:"3px 10px",cursor:"pointer",fontSize:12}}>+ سورة</button>
@@ -174,8 +174,8 @@ function ItemRows({ field, sessForm, setSessForm }) {
         </div>
       </div>
       {isNone   && <div style={{fontSize:12,color:"#e05c5c",padding:"4px 0"}}>لا يوجد {label}</div>}
-      {isNotMemRev && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ للمراجعة في هذه الجلسة</div>}
-      {isNotMem && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ في هذه الجلسة</div>}
+      {isNotMemRev && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ المراجعة</div>}
+      {isNotMem && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ الجديد</div>}
       {!isNone&&!isNotMem&&sessForm[field].length===0&&(
         <div style={{fontSize:11,color:"#6a8090",padding:"4px 0"}}>اضغط "+ سورة" لإضافة</div>
       )}
