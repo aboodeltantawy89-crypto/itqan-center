@@ -50,7 +50,7 @@ const PS = {
 };
 
 const mkStudent = g => ({name:"",guardian:"",guardianPhone:"",gender:g,notes:"",joinDate:nowDate(),payments:{},subscriptionAmount:0});
-const mkSession = (sid="") => ({studentId:sid,date:nowDate(),present:true,newItems:[],revItems:[],grades:[],noNew:false,noRev:false,notMemorized:false,notMemorizedRev:false,noGrade:false,notes:"",photo:null});
+const mkSession = (sid="") => ({studentId:sid,date:nowDate(),present:true,newItems:[],revItems:[],grades:[],noNew:false,noRev:false,notMemorized:false,notMemorizedRev:false,memorized:false,memorizedRev:false,noGrade:false,notes:"",photo:null});
 const mkItem = () => ({surah:"",from:"",to:""});
 const mkDay  = () => ({date:nowDate(),notes:""});
 
@@ -88,6 +88,7 @@ label{font-size:12px;color:#a0b0c0;margin-bottom:4px;display:block}
 .tog{padding:5px 12px;border-radius:6px;border:1px solid #2a3a50;background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;color:#6a8090;transition:all .15s}
 .tog.on{background:rgba(224,92,92,.15);color:#e05c5c;border-color:rgba(224,92,92,.4)}
 .tog.on-o{background:rgba(232,168,76,.15);color:#e8a84c;border-color:rgba(232,168,76,.4)}
+.tog.on-g{background:rgba(76,175,125,.15);color:#4caf7d;border-color:rgba(76,175,125,.4)}
 `;
 
 const PDF_CSS = `
@@ -119,12 +120,14 @@ function SessDetails({ s }) {
   return (
     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:5}}>
       {s.noNew && <div style={{fontSize:12,color:"#e05c5c"}}>📗 لا يوجد حفظ جديد</div>}
-      {s.notMemorized && <div style={{fontSize:12,color:"#e8a84c"}}>📗 لم يحفظ الجديد</div>}
+      {s.memorized && <div style={{fontSize:12,color:"#4caf7d"}}>📗 ✅ حافظ الجديد</div>}
+      {s.notMemorized && <div style={{fontSize:12,color:"#e05c5c"}}>📗 لم يحفظ الجديد</div>}
       {!s.noNew&&!s.notMemorized&&(s.newItems||[]).filter(it=>it.surah).map((it,i)=>(
         <div key={i} style={{fontSize:12}}>📗 {it.surah}{it.from?` (${it.from}–${it.to})`:""}</div>
       ))}
       {s.noRev && <div style={{fontSize:12,color:"#e05c5c"}}>🔄 لا يوجد مراجعة</div>}
-      {s.notMemorizedRev && <div style={{fontSize:12,color:"#e8a84c"}}>🔄 لم يحفظ المراجعة</div>}
+      {s.memorizedRev && <div style={{fontSize:12,color:"#4caf7d"}}>🔄 ✅ حافظ المراجعة</div>}
+      {s.notMemorizedRev && <div style={{fontSize:12,color:"#e05c5c"}}>🔄 لم يحفظ المراجعة</div>}
       {!s.noRev&&(s.revItems||[]).filter(it=>it.surah).map((it,i)=>(
         <div key={i} style={{fontSize:12}}>🔄 {it.surah}{it.from?` (${it.from}–${it.to})`:""}</div>
       ))}
@@ -161,21 +164,25 @@ function ItemRows({ field, sessForm, setSessForm }) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
         <div style={{color:"#c9a84c",fontSize:12,fontWeight:700}}>{icon} {label}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          <button type="button" className={`tog ${isNone?"on":""}`} onClick={()=>setNone(!isNone)}>لا يوجد</button>
-          {field==="newItems" && (
-            <button type="button" className={`tog ${isNotMem?"on-o":""}`} onClick={()=>setNotMem(!isNotMem)}>لم يحفظ</button>
-          )}
-          {field==="revItems" && (
-            <button type="button" className={`tog ${isNotMemRev?"on-o":""}`} onClick={()=>setNotMemRev(!isNotMemRev)}>لم يحفظ</button>
-          )}
+          <button type="button" className={`tog ${isNone?"on-none":""}`} onClick={()=>setNone(!isNone)}>لا يوجد</button>
+          {field==="newItems" && (<>
+            <button type="button" className={`tog ${isMem?"on-g":""}`} onClick={()=>setMem(!isMem)}>حافظ ✅</button>
+            <button type="button" className={`tog ${isNotMem?"on":""}`} onClick={()=>setNotMem(!isNotMem)}>لم يحفظ</button>
+          </>)}
+          {field==="revItems" && (<>
+            <button type="button" className={`tog ${isMemRev?"on-g":""}`} onClick={()=>setMemRev(!isMemRev)}>حافظ ✅</button>
+            <button type="button" className={`tog ${isNotMemRev?"on":""}`} onClick={()=>setNotMemRev(!isNotMemRev)}>لم يحفظ</button>
+          </>)}
           {!isNone&&!isNotMem && (
             <button type="button" onClick={addItem} style={{background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:6,padding:"3px 10px",cursor:"pointer",fontSize:12}}>+ سورة</button>
           )}
         </div>
       </div>
-      {isNone   && <div style={{fontSize:12,color:"#e05c5c",padding:"4px 0"}}>لا يوجد {label}</div>}
-      {isNotMemRev && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ المراجعة</div>}
-      {isNotMem && <div style={{fontSize:12,color:"#e8a84c",padding:"4px 0"}}>لم يحفظ الجديد</div>}
+      {isNone      && <div style={{fontSize:12,color:"#e05c5c",padding:"4px 0"}}>لا يوجد {label}</div>}
+      {isMem       && <div style={{fontSize:12,color:"#4caf7d",padding:"4px 0"}}>✅ حافظ الجديد</div>}
+      {isMemRev    && <div style={{fontSize:12,color:"#4caf7d",padding:"4px 0"}}>✅ حافظ المراجعة</div>}
+      {isNotMem    && <div style={{fontSize:12,color:"#e05c5c",padding:"4px 0"}}>لم يحفظ الجديد</div>}
+      {isNotMemRev && <div style={{fontSize:12,color:"#e05c5c",padding:"4px 0"}}>لم يحفظ المراجعة</div>}
       {!isNone&&!isNotMem&&sessForm[field].length===0&&(
         <div style={{fontSize:11,color:"#6a8090",padding:"4px 0"}}>اضغط "+ سورة" لإضافة</div>
       )}
@@ -1153,30 +1160,61 @@ export default function App() {
               <button className="btn-gold" onClick={()=>setShowAddSess(true)}>+ تسجيل حصة</button>
             </div>
             {sessions.length===0&&<div className="card" style={{padding:22,textAlign:"center",color:"#6a8090",fontSize:13}}>لا توجد حصص.</div>}
-            <div style={{display:"grid",gap:9}}>
-              {[...sessions].reverse().map(s=>{
-                const st=students.find(x=>x.id===s.studentId);
-                return (
-                  <div key={s.id} className="card" style={{padding:13}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:7}}>
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <span className={`bx ${s.present?"bx-g":"bx-r"}`}>{s.present?"حاضر":"غائب"}</span>
-                        <div>
-                          <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",cursor:"pointer"}} onClick={()=>setDetailSt(st)}>{st?.name}</div>
-                          <div style={{fontSize:10,color:"#6a8090"}}>{toAr(s.date)}</div>
+            {(()=>{
+              const secSessions=[...sessions].filter(s=>{const st=students.find(x=>x.id===s.studentId);return st?.gender===sec;});
+              const byDate={};
+              secSessions.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+              const sortedDates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+              if(sortedDates.length===0) return null;
+              return (
+                <div style={{display:"grid",gap:16}}>
+                  {sortedDates.map(date=>{
+                    const daySessions=[...byDate[date]].sort((a,b)=>{
+                      const na=students.find(x=>x.id===a.studentId)?.name||"";
+                      const nb=students.find(x=>x.id===b.studentId)?.name||"";
+                      return na.localeCompare(nb,"ar");
+                    });
+                    const trainDay=secDays.find(d=>d.date===date);
+                    const presCount=daySessions.filter(s=>s.present).length;
+                    return (
+                      <div key={date}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,padding:"8px 12px",background:"#1a2a3a",borderRadius:10,border:"1px solid #c9a84c44"}}>
+                          <div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#c9a84c"}}>{toAr(date)}</div>
+                            {trainDay?.notes&&<div style={{fontSize:11,color:"#6a8090"}}>{trainDay.notes}</div>}
+                          </div>
+                          <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                            <span className="bx bx-g">{presCount} حاضر</span>
+                            <span className="bx bx-r">{daySessions.length-presCount} غائب</span>
+                          </div>
+                        </div>
+                        <div style={{display:"grid",gap:8,paddingRight:10,borderRight:"3px solid #c9a84c44"}}>
+                          {daySessions.map(s=>{
+                            const st=students.find(x=>x.id===s.studentId);
+                            return (
+                              <div key={s.id} className="card" style={{padding:13}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:7}}>
+                                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                    <span className={`bx ${s.present?"bx-g":"bx-r"}`}>{s.present?"حاضر":"غائب"}</span>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",cursor:"pointer"}} onClick={()=>setDetailSt(st)}>{st?.name}</div>
+                                  </div>
+                                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                    {s.notMemorized&&<span className="bx bx-o">لم يحفظ</span>}
+                                    <button className="btn-out" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>{setSessForm({...s,studentId:String(s.studentId)});setEditSessId(s.id);setShowAddSess(true);}}>✏️</button>
+                                    <button className="btn-red" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>delSession(s.id)}>🗑️</button>
+                                  </div>
+                                </div>
+                                {s.present&&<SessDetails s={s}/>}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        {s.notMemorized&&<span className="bx bx-o">لم يحفظ</span>}
-                        <button className="btn-out" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>{setSessForm({...s,studentId:String(s.studentId)});setEditSessId(s.id);setShowAddSess(true);}}>✏️</button>
-                        <button className="btn-red" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>delSession(s.id)}>🗑️</button>
-                      </div>
-                    </div>
-                    {s.present&&<SessDetails s={s}/>}
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </>}
 
           {/* ─ ATTENDANCE ─ */}
