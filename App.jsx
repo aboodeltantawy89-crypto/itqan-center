@@ -567,9 +567,164 @@ function DaySessionGroup({ date, daySessions, trainDay, presCount, students, set
   );
 }
 
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+const PASS_KEY        = "itq_auth_pass";
+const DEFAULT_PASS    = "itqan_tantawy2026";
+const RECOVERY_EMAIL  = "aboodtantawy89@gmail.com";
+const SESSION_KEY     = "itq_session";
+const EJS_SVC         = "service_dkvuqsc";
+const EJS_TPL         = "template_v4ph01k";
+const EJS_PUB         = "senH8D9_Fk1fJTXcy";
+
+function loadEmailJS() {
+  return new Promise((resolve, reject) => {
+    if (window._ejsLoaded && window.emailjs) { resolve(); return; }
+    const existing = document.getElementById("emailjs-sdk");
+    if (existing) {
+      const wait = setInterval(() => {
+        if (window.emailjs) { clearInterval(wait); window.emailjs.init(EJS_PUB); window._ejsLoaded = true; resolve(); }
+      }, 100);
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "emailjs-sdk";
+    s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
+    s.onload = () => { window.emailjs.init(EJS_PUB); window._ejsLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error("فشل تحميل EmailJS"));
+    document.head.appendChild(s);
+  });
+}
+
+function genOTP() { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+function LoginScreen({ onLogin }) {
+  const [input,     setInput]     = useState("");
+  const [error,     setError]     = useState("");
+  const [mode,      setMode]      = useState("login");
+  const [newPass,   setNewPass]   = useState("");
+  const [newPass2,  setNewPass2]  = useState("");
+  const [otpInput,  setOtpInput]  = useState("");
+  const [otpData,   setOtpData]   = useState(null);
+  const [sending,   setSending]   = useState(false);
+  const [msg,       setMsg]       = useState("");
+  const [showP,     setShowP]     = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  const storedPass = () => LS.get(PASS_KEY, DEFAULT_PASS);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+
+  const handleLogin = () => {
+    if (input === storedPass()) { LS.set(SESSION_KEY, Date.now()); onLogin(); }
+    else { setError("❌ رقم سري غير صحيح"); setInput(""); }
+  };
+
+  const sendOTP = async () => {
+    setSending(true); setError(""); setMsg("");
+    const code = genOTP();
+    const expires = Date.now() + 10 * 60 * 1000;
+    try {
+      await loadEmailJS();
+      await window.emailjs.send(EJS_SVC, EJS_TPL, { to_email: RECOVERY_EMAIL, otp_code: code });
+      setOtpData({ code, expires });
+      setMode("otp"); setCountdown(600);
+      const masked = RECOVERY_EMAIL.replace(/(.{2}).+(@.+)/, "$1•••$2");
+      setMsg(`تم إرسال رمز التحقق إلى ${masked}`);
+    } catch (e) { setError("❌ فشل إرسال الإيميل، تحقق من الاتصال"); }
+    setSending(false);
+  };
+
+  const verifyOTP = () => {
+    if (!otpData) return setError("حدث خطأ، أعد الإرسال");
+    if (Date.now() > otpData.expires) return setError("❌ انتهت صلاحية الرمز");
+    if (otpInput.trim() !== otpData.code) return setError("❌ الرمز غير صحيح");
+    setError(""); setMode("change_pass");
+  };
+
+  const handleChangePass = () => {
+    if (!newPass) return setError("أدخل الرقم السري الجديد");
+    if (newPass.length < 6) return setError("يجب أن يكون ٦ أحرف على الأقل");
+    if (newPass !== newPass2) return setError("❌ كلمتا المرور غير متطابقتين");
+    LS.set(PASS_KEY, newPass);
+    setMsg("✅ تم تغيير الرقم السري بنجاح!");
+    setOtpData(null); setNewPass(""); setNewPass2(""); setError("");
+    setTimeout(() => { setMode("login"); setMsg(""); }, 2000);
+  };
+
+  const goLogin = () => { setMode("login"); setError(""); setMsg(""); setOtpInput(""); setOtpData(null); };
+
+  return (
+    <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center",padding:16,fontFamily:"'Cairo',sans-serif"}}>
+      <style>{CSS}</style>
+      <div style={{width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <img src="/logo_-_white.png" style={{height:90,filter:"brightness(0) invert(1)",opacity:0.9,marginBottom:8}} onError={e=>e.target.style.display="none"}/>
+          <div style={{fontFamily:"'Amiri',serif",fontSize:22,color:"#c9a84c",fontWeight:700}}>مركز الإتقان</div>
+          <div style={{fontSize:12,color:"#6a8090",marginTop:3}}>لتحفيظ القرآن الكريم</div>
+        </div>
+        <div className="card" style={{padding:24}}>
+          {mode === "login" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:20,textAlign:"center"}}>🔐 تسجيل الدخول</div>
+            <div style={{marginBottom:12}}>
+              <label>الرقم السري</label>
+              <div style={{position:"relative"}}>
+                <input type={showP?"text":"password"} value={input} onChange={e=>{setInput(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="أدخل الرقم السري" style={{paddingLeft:36}} autoFocus/>
+                <span onClick={()=>setShowP(!showP)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",cursor:"pointer",fontSize:15,color:"#6a8090",userSelect:"none"}}>{showP?"🙈":"👁️"}</span>
+              </div>
+            </div>
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleLogin}>دخول</button>
+            <div style={{textAlign:"center",marginTop:14}}>
+              <span onClick={()=>{setMode("change_req");setError("");setMsg("");}} style={{fontSize:12,color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>تغيير الرقم السري</span>
+            </div>
+          </>}
+          {mode === "change_req" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:12,textAlign:"center"}}>🔑 تغيير الرقم السري</div>
+            <div style={{fontSize:13,color:"#a0b0c0",lineHeight:1.9,marginBottom:18,textAlign:"center",background:"#0f1923",borderRadius:8,padding:"10px 14px"}}>سيتم إرسال رمز تحقق إلى بريدك الإلكتروني.</div>
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={sendOTP} disabled={sending}>{sending?"⏳ جاري الإرسال...":"📧 إرسال رمز التحقق"}</button>
+            <div style={{textAlign:"center",marginTop:14}}><span onClick={goLogin} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع</span></div>
+          </>}
+          {mode === "otp" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:12,textAlign:"center"}}>📩 أدخل رمز التحقق</div>
+            {msg && <div style={{background:"rgba(76,175,125,.1)",border:"1px solid rgba(76,175,125,.3)",borderRadius:8,padding:"9px 12px",fontSize:12,color:"#4caf7d",textAlign:"center",marginBottom:14}}>{msg}</div>}
+            <div style={{marginBottom:12}}>
+              <label>الرمز المرسل (6 أرقام)</label>
+              <input type="text" value={otpInput} onChange={e=>{setOtpInput(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&verifyOTP()} placeholder="مثال: 482951" maxLength={6} style={{textAlign:"center",fontSize:20,letterSpacing:6}} autoFocus/>
+            </div>
+            {countdown > 0 && <div style={{fontSize:11,color:"#6a8090",textAlign:"center",marginBottom:10}}>⏱ صالح لـ {Math.floor(countdown/60)}:{String(countdown%60).padStart(2,"0")}</div>}
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={verifyOTP}>تحقق من الرمز</button>
+            <div style={{textAlign:"center",marginTop:12,display:"flex",justifyContent:"center",gap:16}}>
+              <span onClick={sendOTP} style={{fontSize:12,color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>إعادة الإرسال</span>
+              <span onClick={goLogin} style={{fontSize:12,color:"#6a8090",cursor:"pointer",textDecoration:"underline"}}>← رجوع</span>
+            </div>
+          </>}
+          {mode === "change_pass" && <>
+            <div style={{fontSize:15,color:"#e8dcc8",fontWeight:600,marginBottom:16,textAlign:"center"}}>✅ الرقم السري الجديد</div>
+            <div style={{display:"grid",gap:12,marginBottom:12}}>
+              <div><label>الرقم السري الجديد</label><input type="password" value={newPass} onChange={e=>{setNewPass(e.target.value);setError("");}} placeholder="٦ أحرف على الأقل"/></div>
+              <div><label>تأكيد الرقم السري</label><input type="password" value={newPass2} onChange={e=>{setNewPass2(e.target.value);setError("");}} placeholder="أعد كتابة الرقم السري"/></div>
+            </div>
+            {error && <div style={{color:"#e05c5c",fontSize:12,marginBottom:10,textAlign:"center"}}>{error}</div>}
+            {msg   && <div style={{color:"#4caf7d",fontSize:13,marginBottom:10,textAlign:"center"}}>{msg}</div>}
+            <button className="btn-gold" style={{width:"100%",padding:"11px"}} onClick={handleChangePass}>حفظ الرقم السري الجديد</button>
+          </>}
+        </div>
+        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#3a4a60"}}>مركز الإتقان © {new Date().getFullYear()}</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [sec,         setSec]         = useState(() => LS.get("itq_last_sec","male"));
+  const [loggedIn,    setLoggedIn]    = useState(() => !!LS.get(SESSION_KEY, null));
   const [loading,     setLoading]     = useState(true);
   const [syncing,     setSyncing]     = useState(false);
   const [page,        setPage]        = useState(() => LS.get("itq_last_page","dashboard"));
@@ -581,6 +736,7 @@ export default function App() {
   const [showAddSess, setShowAddSess] = useState(false);
   const [showAddDay,  setShowAddDay]  = useState(false);
   const [editSt,      setEditSt]      = useState(null);
+  const [editSessId,  setEditSessId]  = useState(null);
   const [detailSt,    setDetailSt]    = useState(null);
   const [detailDay,   setDetailDay]   = useState(null);
   const [reportSt,    setReportSt]    = useState(null);
@@ -665,8 +821,17 @@ export default function App() {
     if(detailSt?.id===student.id) setDetailSt(upd);
   };
   const addSession = () => {
-    setSessions(p=>[...p,{...sessForm,studentId:Number(sessForm.studentId),id:Date.now()}]);
+    if(editSessId) {
+      setSessions(p=>p.map(s=>s.id===editSessId?{...sessForm,studentId:Number(sessForm.studentId),id:editSessId}:s));
+      setEditSessId(null);
+    } else {
+      setSessions(p=>[...p,{...sessForm,studentId:Number(sessForm.studentId),id:Date.now()}]);
+    }
     setShowAddSess(false); setSessForm(mkSession());
+  };
+  const delSession = id => {
+    if(!confirm("حذف هذه الحصة نهائياً؟")) return;
+    setSessions(p=>p.filter(s=>s.id!==id));
   };
   const addDay = () => {
     if(!dayForm.date) return;
@@ -690,6 +855,8 @@ export default function App() {
   };
 
   const secDays = days.filter(d=>d.section===sec).sort((a,b)=>b.date.localeCompare(a.date));
+
+  if(!loggedIn) return <LoginScreen onLogin={()=>setLoggedIn(true)} />;
 
   if(loading) return (
     <div dir="rtl" style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -745,7 +912,7 @@ export default function App() {
             );
           })}
         </div>
-        {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
+        {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>{setShowAddSess(false);setEditSessId(null);setSessForm(mkSession());}}/>}
         {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
       </div>
     );
@@ -811,7 +978,7 @@ export default function App() {
             </div>
           ))}
         </div>
-        {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
+        {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>{setShowAddSess(false);setEditSessId(null);setSessForm(mkSession());}}/>}
         {editSt&&<EditModal editSt={editSt} setEditSt={setEditSt} onSave={saveEdit} filterMonth={filterMonth} toArShort={toArShort}/>}
         {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
       </div>
@@ -852,6 +1019,9 @@ export default function App() {
           {[{k:"dashboard",i:"📊",l:"لوحة التحكم"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"أيام التدريس"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
             <div key={x.k} className={`nav ${page===x.k?"on":""}`} onClick={()=>setPage(x.k)}>{x.i} {x.l}</div>
           ))}
+          <div style={{marginTop:"auto",paddingTop:20}}>
+            <div className="nav" style={{color:"#e05c5c",marginTop:8}} onClick={()=>{LS.set(SESSION_KEY,null);setLoggedIn(false);}}>🚪 تسجيل الخروج</div>
+          </div>
         </div>
 
         {/* Content */}
@@ -1044,7 +1214,7 @@ export default function App() {
 
       {showAddSt&&<AddStudentModal sec={sec} newSt={newSt} setNewSt={setNewSt} onSave={addStudent} onClose={()=>setShowAddSt(false)}/>}
       {showAddDay&&<AddDayModal dayForm={dayForm} setDayForm={setDayForm} studentCount={students.length} onSave={addDay} onClose={()=>setShowAddDay(false)}/>}
-      {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>setShowAddSess(false)}/>}
+      {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>{setShowAddSess(false);setEditSessId(null);setSessForm(mkSession());}}/>}
       {editSt&&<EditModal editSt={editSt} setEditSt={setEditSt} onSave={saveEdit} filterMonth={filterMonth} toArShort={toArShort}/>}
       {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
     </div>
