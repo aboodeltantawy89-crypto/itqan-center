@@ -88,6 +88,28 @@ label{font-size:12px;color:#a0b0c0;margin-bottom:4px;display:block}
 .tog{padding:5px 12px;border-radius:6px;border:1px solid #2a3a50;background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;color:#6a8090;transition:all .15s}
 .tog.on{background:rgba(224,92,92,.15);color:#e05c5c;border-color:rgba(224,92,92,.4)}
 .tog.on-o{background:rgba(232,168,76,.15);color:#e8a84c;border-color:rgba(232,168,76,.4)}
+@media(max-width:600px){
+  .sidebar-desktop{display:none!important}
+  .bottom-nav{display:flex!important}
+  .content-area{padding:12px!important}
+  .modal{padding:16px!important;max-height:96vh!important}
+}
+@media(min-width:601px){.bottom-nav{display:none!important}}
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#141e2b;border-top:1px solid #2a3a50;
+  display:none;z-index:100;
+  padding:8px 4px max(8px,env(safe-area-inset-bottom));
+}
+.bottom-nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;padding:4px 0;
+  font-family:'Cairo',sans-serif;font-size:9px;color:#6a8090;
+  border:none;background:transparent;transition:color .2s;
+}
+.bottom-nav-item.active{color:#c9a84c}
+.bottom-nav-item .nav-icon{font-size:20px}
+
 `;
 
 const PDF_CSS = `
@@ -991,30 +1013,27 @@ export default function App() {
       <style>{CSS}</style>
 
       {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#1a2535,#0f1923)",borderBottom:"1px solid #2a3a50",padding:"13px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo_-_white.png" style={{height:44,filter:"brightness(0) invert(1)",opacity:0.9}} onError={e=>e.target.style.display="none"}/>
+      <div style={{background:"linear-gradient(135deg,#1a2535,#0f1923)",borderBottom:"1px solid #2a3a50",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <img src="/logo_-_white.png" style={{height:40,filter:"brightness(0) invert(1)",opacity:0.9}} onError={e=>e.target.style.display="none"}/>
           <div>
-            <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c"}}>مركز الإتقان · متابعة الحلقات</div>
-            <div style={{fontSize:11,color:"#6a8090"}}>تحفيظ القرآن الكريم</div>
+            <div style={{fontFamily:"'Amiri',serif",fontSize:15,color:"#c9a84c",lineHeight:1.2}}>مركز الإتقان</div>
+            <div style={{fontSize:10,color:"#6a8090"}}>متابعة الحلقات</div>
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:11,color:"#6a8090"}}>الشهر:</span>
-            <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{width:145,padding:"5px 8px",fontSize:12}}/>
-          </div>
-          {syncing&&<span style={{fontSize:11,color:"#4caf7d"}}>⏳ حفظ...</span>}
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{width:130,padding:"5px 8px",fontSize:12}}/>
+          {syncing&&<span style={{fontSize:11,color:"#4caf7d"}}>⏳</span>}
           <div style={{display:"flex",background:"#0f1923",border:"1px solid #2a3a50",borderRadius:10,padding:3,gap:3}}>
-            <button onClick={()=>setSec("male")} style={{padding:"5px 14px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="male"?"linear-gradient(135deg,#3b82f6,#2563eb)":"transparent",color:sec==="male"?"#fff":"#6a8090",transition:"all .2s"}}>👦 الذكور</button>
-            <button onClick={()=>setSec("female")} style={{padding:"5px 14px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="female"?"linear-gradient(135deg,#ec4899,#db2777)":"transparent",color:sec==="female"?"#fff":"#6a8090",transition:"all .2s"}}>👧 الإناث</button>
+            <button onClick={()=>setSec("male")} style={{padding:"5px 12px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="male"?"linear-gradient(135deg,#3b82f6,#2563eb)":"transparent",color:sec==="male"?"#fff":"#6a8090",transition:"all .2s"}}>👦 الذكور</button>
+            <button onClick={()=>setSec("female")} style={{padding:"5px 12px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="female"?"linear-gradient(135deg,#ec4899,#db2777)":"transparent",color:sec==="female"?"#fff":"#6a8090",transition:"all .2s"}}>👧 الإناث</button>
           </div>
         </div>
       </div>
 
       <div style={{display:"flex",minHeight:"calc(100vh - 60px)"}}>
-        {/* Sidebar */}
-        <div style={{width:178,background:"#141e2b",borderLeft:"1px solid #2a3a50",padding:"14px 10px",flexShrink:0}}>
+        {/* Sidebar - desktop only */}
+        <div className="sidebar-desktop" style={{width:178,background:"#141e2b",borderLeft:"1px solid #2a3a50",padding:"14px 10px",flexShrink:0}}>
           <div style={{margin:"0 0 12px 0",padding:"8px 10px",borderRadius:7,background:sc.bg,border:`1px solid ${sc.br}`,fontSize:12,fontWeight:700,color:sc.c,textAlign:"center"}}>{sc.lbl}</div>
           {[{k:"dashboard",i:"📊",l:"لوحة التحكم"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"أيام التدريس"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
             <div key={x.k} className={`nav ${page===x.k?"on":""}`} onClick={()=>setPage(x.k)}>{x.i} {x.l}</div>
@@ -1025,7 +1044,7 @@ export default function App() {
         </div>
 
         {/* Content */}
-        <div style={{flex:1,padding:20,overflowY:"auto"}}>
+        <div className="content-area" style={{flex:1,padding:20,overflowY:"auto",paddingBottom:80}}>
 
           {/* ─ DASHBOARD ─ */}
           {page==="dashboard"&&<>
@@ -1217,6 +1236,20 @@ export default function App() {
       {showAddSess&&<SessModal students={students} sessForm={sessForm} setSessForm={setSessForm} onSave={addSession} onClose={()=>{setShowAddSess(false);setEditSessId(null);setSessForm(mkSession());}}/>}
       {editSt&&<EditModal editSt={editSt} setEditSt={setEditSt} onSave={saveEdit} filterMonth={filterMonth} toArShort={toArShort}/>}
       {reportSt&&<ReportModal student={reportSt} sessions={sessions} sc={sc} filterMonth={filterMonth} onClose={()=>setReportSt(null)} onExportPDF={(s,l)=>buildAndPrintPDF(s,sessions,sc,filterMonth,l)}/>}
+
+      {/* Bottom Navigation - mobile only */}
+      <nav className="bottom-nav">
+        {[{k:"dashboard",i:"📊",l:"الرئيسية"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"الحضور"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
+          <button key={x.k} className={`bottom-nav-item ${page===x.k?"active":""}`} onClick={()=>setPage(x.k)}>
+            <span className="nav-icon">{x.i}</span>
+            <span>{x.l}</span>
+          </button>
+        ))}
+        <button className="bottom-nav-item" onClick={()=>{LS.set(SESSION_KEY,null);setLoggedIn(false);}}>
+          <span className="nav-icon">🚪</span>
+          <span style={{color:"#e05c5c"}}>خروج</span>
+        </button>
+      </nav>
     </div>
   );
 }
