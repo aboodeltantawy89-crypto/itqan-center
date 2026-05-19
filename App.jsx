@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const SURAHS = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
+const SURAH_VERSES = {"الفاتحة":7,"البقرة":286,"آل عمران":200,"النساء":176,"المائدة":120,"الأنعام":165,"الأعراف":206,"الأنفال":75,"التوبة":129,"يونس":109,"هود":123,"يوسف":111,"الرعد":43,"إبراهيم":52,"الحجر":99,"النحل":128,"الإسراء":111,"الكهف":110,"مريم":98,"طه":135,"الأنبياء":112,"الحج":78,"المؤمنون":118,"النور":64,"الفرقان":77,"الشعراء":227,"النمل":93,"القصص":88,"العنكبوت":69,"الروم":60,"لقمان":34,"السجدة":30,"الأحزاب":73,"سبأ":54,"فاطر":45,"يس":83,"الصافات":182,"ص":88,"الزمر":75,"غافر":85,"فصلت":54,"الشورى":53,"الزخرف":89,"الدخان":59,"الجاثية":37,"الأحقاف":35,"محمد":38,"الفتح":29,"الحجرات":18,"ق":45,"الذاريات":60,"الطور":49,"النجم":62,"القمر":55,"الرحمن":78,"الواقعة":96,"الحديد":29,"المجادلة":22,"الحشر":24,"الممتحنة":13,"الصف":14,"الجمعة":11,"المنافقون":11,"التغابن":18,"الطلاق":12,"التحريم":12,"الملك":30,"القلم":52,"الحاقة":52,"المعارج":44,"نوح":28,"الجن":28,"المزمل":20,"المدثر":56,"القيامة":40,"الإنسان":31,"المرسلات":50,"النبأ":40,"النازعات":46,"عبس":42,"التكوير":29,"الانفطار":19,"المطففين":36,"الانشقاق":25,"البروج":22,"الطارق":17,"الأعلى":19,"الغاشية":26,"الفجر":30,"البلد":20,"الشمس":15,"الليل":21,"الضحى":11,"الشرح":8,"التين":8,"العلق":19,"القدر":5,"البينة":8,"الزلزلة":8,"العاديات":11,"القارعة":11,"التكاثر":8,"العصر":3,"الهمزة":9,"الفيل":5,"قريش":4,"الماعون":7,"الكوثر":3,"الكافرون":6,"النصر":3,"المسد":5,"الإخلاص":4,"الفلق":5,"الناس":6};
 const GRADES = ["ممتاز","جيد جداً","جيد","مقبول","ضعيف"];
 const GC = {"ممتاز":"#4caf7d","جيد جداً":"#6ec6a0","جيد":"#c9a84c","مقبول":"#e8a84c","ضعيف":"#e05c5c"};
 
@@ -49,6 +50,8 @@ const PS = {
   },
 };
 
+const mkCourse = () => ({id:0,name:"",goal:"",ageGroup:"",supervisor:"",teacher:"",days:0,hoursPerDay:0,mode:"حضوري",students:[],createdAt:nowDate()});
+const mkCourseStudent = () => ({id:0,name:"",birthDate:"",age:"",guardianPhone:"",startSurah:"",startVerse:1,level:"مبتدئ"});
 const mkStudent = g => ({name:"",guardian:"",guardianPhone:"",gender:g,notes:"",joinDate:nowDate(),payments:{}});
 const mkSession = (sid="") => ({studentId:sid,date:nowDate(),present:true,newItems:[],revItems:[],grades:[],noNew:false,noRev:false,notMemorized:false,noGrade:false,notes:""});
 const mkItem = () => ({surah:"",from:"",to:""});
@@ -746,6 +749,11 @@ function LoginScreen({ onLogin }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [sec,         setSec]         = useState(() => LS.get("itq_last_sec","male"));
+  const [courses,     setCourses]     = useState(() => LS.get("itq_courses", []));
+  const [courseView,  setCourseView]  = useState(null);   // null | "list" | "add" | "addStudent" | {course}
+  const [courseForm,  setCourseForm]  = useState(mkCourse());
+  const [courseStForm,setCourseStForm]= useState(mkCourseStudent());
+  const [editCourseId,setEditCourseId]= useState(null);
   const [loggedIn,    setLoggedIn]    = useState(() => !!LS.get(SESSION_KEY, null));
   const [loading,     setLoading]     = useState(true);
   const [syncing,     setSyncing]     = useState(false);
@@ -785,6 +793,7 @@ export default function App() {
   useEffect(() => { if(!loading) syncData(`itq_${sec}_sessions`,sessions); }, [sessions]);
   useEffect(() => { if(!loading) syncData(`itq_${sec}_days`,    days);     }, [days]);
   useEffect(() => { LS.set("itq_last_sec", sec);  }, [sec]);
+  useEffect(() => { LS.set("itq_courses", courses); }, [courses]);
   useEffect(() => { LS.set("itq_last_page",page); }, [page]);
 
   const sc = sec==="male"
@@ -1035,7 +1044,7 @@ export default function App() {
         {/* Sidebar - desktop only */}
         <div className="sidebar-desktop" style={{width:178,background:"#141e2b",borderLeft:"1px solid #2a3a50",padding:"14px 10px",flexShrink:0}}>
           <div style={{margin:"0 0 12px 0",padding:"8px 10px",borderRadius:7,background:sc.bg,border:`1px solid ${sc.br}`,fontSize:12,fontWeight:700,color:sc.c,textAlign:"center"}}>{sc.lbl}</div>
-          {[{k:"dashboard",i:"📊",l:"لوحة التحكم"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"أيام التدريس"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
+          {[{k:"dashboard",i:"📊",l:"لوحة التحكم"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"أيام التدريس"},{k:"courses",i:"🎓",l:"الدورات"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
             <div key={x.k} className={`nav ${page===x.k?"on":""}`} onClick={()=>setPage(x.k)}>{x.i} {x.l}</div>
           ))}
           <div style={{marginTop:"auto",paddingTop:20}}>
@@ -1191,6 +1200,217 @@ export default function App() {
             </div>
           </>}
 
+
+          {/* ─ COURSES ─ */}
+          {page==="courses"&&<>
+            {/* LIST */}
+            {!courseView&&<>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <div style={{fontFamily:"'Amiri',serif",fontSize:19,color:"#c9a84c"}}>🎓 الدورات</div>
+                <button className="btn-gold" onClick={()=>{setCourseForm(mkCourse());setCourseView("add");}}>+ إضافة دورة</button>
+              </div>
+              {courses.length===0&&<div className="card" style={{padding:28,textAlign:"center",color:"#6a8090",fontSize:13}}>لا توجد دورات. أضف أول دورة!</div>}
+              <div style={{display:"grid",gap:11}}>
+                {courses.map(c=>(
+                  <div key={c.id} className="card hov" style={{padding:16,cursor:"pointer"}} onClick={()=>setCourseView(c)}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,color:"#c9a84c",marginBottom:3}}>{c.name}</div>
+                        {c.goal&&<div style={{fontSize:12,color:"#a0b0c0",marginBottom:2}}>🎯 {c.goal}</div>}
+                        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:5}}>
+                          {c.teacher&&<span style={{fontSize:11,color:"#6a8090"}}>👨‍🏫 {c.teacher}</span>}
+                          {c.supervisor&&<span style={{fontSize:11,color:"#6a8090"}}>👤 {c.supervisor}</span>}
+                          {c.ageGroup&&<span style={{fontSize:11,color:"#6a8090"}}>👥 {c.ageGroup}</span>}
+                          {c.days>0&&<span style={{fontSize:11,color:"#6a8090"}}>📅 {c.days} يوم</span>}
+                          {c.hoursPerDay>0&&<span style={{fontSize:11,color:"#6a8090"}}>⏱ {c.hoursPerDay} ساعة/يوم</span>}
+                          <span className={`bx ${c.mode==="أونلاين"?"bx-y":"bx-g"}`}>{c.mode}</span>
+                        </div>
+                      </div>
+                      <div style={{textAlign:"center",background:"#0f1923",borderRadius:8,padding:"8px 14px",border:"1px solid #2a3a50"}}>
+                        <div style={{fontSize:20,fontWeight:700,color:"#c9a84c"}}>{(c.students||[]).length}</div>
+                        <div style={{fontSize:10,color:"#6a8090"}}>طالب</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>}
+
+            {/* ADD COURSE FORM */}
+            {courseView==="add"&&<>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                <button className="btn-out" style={{padding:"5px 12px",fontSize:12}} onClick={()=>setCourseView(null)}>← رجوع</button>
+                <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c"}}>{editCourseId?"تعديل الدورة":"إضافة دورة جديدة"}</div>
+              </div>
+              <div className="card" style={{padding:20}}>
+                <div style={{display:"grid",gap:13}}>
+                  <div><label>اسم الدورة *</label><input value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} placeholder="مثال: دورة تحفيظ صيف ١٤٤٧"/></div>
+                  <div><label>هدف الدورة</label><textarea rows={2} value={courseForm.goal} onChange={e=>setCourseForm({...courseForm,goal:e.target.value})} placeholder="مثال: حفظ جزء عم في ٣٠ يوم"/></div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div><label>الفئة العمرية المستهدفة</label><input value={courseForm.ageGroup} onChange={e=>setCourseForm({...courseForm,ageGroup:e.target.value})} placeholder="مثال: ٨–١٤ سنة"/></div>
+                    <div><label>المشرف</label><input value={courseForm.supervisor} onChange={e=>setCourseForm({...courseForm,supervisor:e.target.value})} placeholder="اسم المشرف"/></div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div><label>المعلم</label><input value={courseForm.teacher} onChange={e=>setCourseForm({...courseForm,teacher:e.target.value})} placeholder="اسم المعلم"/></div>
+                    <div><label>نظام الحضور</label>
+                      <div style={{display:"flex",gap:8,marginTop:4}}>
+                        {["حضوري","أونلاين"].map(m=>(
+                          <button key={m} type="button" className={`tog ${courseForm.mode===m?"on-g":""}`} style={{flex:1,padding:"8px"}} onClick={()=>setCourseForm({...courseForm,mode:m})}>{m==="حضوري"?"🏫 حضوري":"💻 أونلاين"}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div><label>عدد أيام الدورة</label><input type="number" min="1" value={courseForm.days||""} onChange={e=>setCourseForm({...courseForm,days:Number(e.target.value)})} placeholder="مثال: 30"/></div>
+                    <div><label>عدد الساعات يومياً</label><input type="number" min="1" step="0.5" value={courseForm.hoursPerDay||""} onChange={e=>setCourseForm({...courseForm,hoursPerDay:Number(e.target.value)})} placeholder="مثال: 2"/></div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:18}}>
+                  <button className="btn-gold" style={{flex:1,padding:"11px"}} disabled={!courseForm.name.trim()} onClick={()=>{
+                    if(editCourseId){
+                      setCourses(p=>p.map(c=>c.id===editCourseId?{...courseForm,id:editCourseId,students:c.students}:c));
+                      setEditCourseId(null); setCourseView(null);
+                    } else {
+                      const nc={...courseForm,id:Date.now(),students:[]};
+                      setCourses(p=>[...p,nc]);
+                      setCourseView("addStudent");
+                      setCourseForm(nc);
+                      setCourseStForm(mkCourseStudent());
+                    }
+                  }}>التالي: إضافة طلاب ←</button>
+                  <button className="btn-out" onClick={()=>setCourseView(null)}>إلغاء</button>
+                </div>
+              </div>
+            </>}
+
+            {/* ADD STUDENTS TO COURSE */}
+            {courseView==="addStudent"&&<>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                <button className="btn-out" style={{padding:"5px 12px",fontSize:12}} onClick={()=>setCourseView(null)}>✓ حفظ والخروج</button>
+                <div style={{fontFamily:"'Amiri',serif",fontSize:17,color:"#c9a84c"}}>إضافة طلاب · {courseForm.name}</div>
+              </div>
+              <div style={{display:"grid",gap:14,gridTemplateColumns:"1fr 1fr"}}>
+                {/* Form */}
+                <div className="card" style={{padding:16,gridColumn:"1/-1"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",marginBottom:12}}>بيانات الطالب</div>
+                  <div style={{display:"grid",gap:10}}>
+                    <div><label>الاسم ثلاثي *</label><input value={courseStForm.name} onChange={e=>setCourseStForm({...courseStForm,name:e.target.value})} placeholder="الاسم الأول والثاني والثالث"/></div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      <div><label>تاريخ الميلاد</label>
+                        <input type="date" value={courseStForm.birthDate} onChange={e=>{
+                          const bd=e.target.value;
+                          const age=bd?Math.floor((Date.now()-new Date(bd).getTime())/(365.25*24*3600*1000)):"";
+                          setCourseStForm({...courseStForm,birthDate:bd,age:age});
+                        }}/>
+                      </div>
+                      <div><label>العمر</label><input value={courseStForm.age?courseStForm.age+" سنة":""} readOnly style={{background:"#141e2b",color:"#c9a84c",fontWeight:700}} placeholder="يُحسب تلقائياً"/></div>
+                    </div>
+                    <div><label>رقم ولي الأمر</label><input type="tel" value={courseStForm.guardianPhone} onChange={e=>setCourseStForm({...courseStForm,guardianPhone:e.target.value})} placeholder="01xxxxxxxxx"/></div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      <div><label>البداية من (سورة)</label>
+                        <select value={courseStForm.startSurah} onChange={e=>setCourseStForm({...courseStForm,startSurah:e.target.value,startVerse:1})}>
+                          <option value="">اختر السورة</option>
+                          {SURAHS.map(s=><option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div><label>رقم الآية</label>
+                        <select value={courseStForm.startVerse} onChange={e=>setCourseStForm({...courseStForm,startVerse:Number(e.target.value)})}>
+                          {Array.from({length:courseStForm.startSurah?SURAH_VERSES[courseStForm.startSurah]||1:1},(_,i)=>i+1).map(v=>(
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div><label>المستوى</label>
+                      <div style={{display:"flex",gap:8,marginTop:4}}>
+                        {["مبتدئ","متوسط","متقدم"].map(lv=>(
+                          <button key={lv} type="button" className={`tog ${courseStForm.level===lv?"on-g":""}`} style={{flex:1,padding:"8px"}} onClick={()=>setCourseStForm({...courseStForm,level:lv})}>{lv}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <button className="btn-gold" style={{width:"100%",padding:"11px",marginTop:14}} disabled={!courseStForm.name.trim()} onClick={()=>{
+                    const st={...courseStForm,id:Date.now()};
+                    const updated=courses.map(c=>c.id===courseForm.id?{...c,students:[...(c.students||[]),st]}:c);
+                    setCourses(updated);
+                    setCourseForm(prev=>({...prev,students:[...(prev.students||[]),st]}));
+                    setCourseStForm(mkCourseStudent());
+                  }}>+ إضافة الطالب</button>
+                </div>
+                {/* Students list */}
+                {(courseForm.students||[]).length>0&&<div className="card" style={{padding:16,gridColumn:"1/-1"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",marginBottom:10}}>الطلاب المضافون ({(courseForm.students||[]).length})</div>
+                  <div style={{display:"grid",gap:8}}>
+                    {[...(courseForm.students||[])].sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(st=>(
+                      <div key={st.id} style={{padding:"10px 12px",background:"#0f1923",borderRadius:8,border:"1px solid #2a3a50",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:600}}>{st.name}</div>
+                          <div style={{fontSize:11,color:"#6a8090"}}>
+                            {st.age?`${st.age} سنة · `:""}{st.level}
+                            {st.startSurah?` · من ${st.startSurah} آية ${st.startVerse}`:""}
+                          </div>
+                        </div>
+                        <button className="btn-red" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>{
+                          const upd=courses.map(c=>c.id===courseForm.id?{...c,students:(c.students||[]).filter(s=>s.id!==st.id)}:c);
+                          setCourses(upd);
+                          setCourseForm(prev=>({...prev,students:(prev.students||[]).filter(s=>s.id!==st.id)}));
+                        }}>🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>}
+              </div>
+            </>}
+
+            {/* COURSE DETAIL */}
+            {courseView&&courseView!=="add"&&courseView!=="addStudent"&&<>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+                <button className="btn-out" style={{padding:"5px 12px",fontSize:12}} onClick={()=>setCourseView(null)}>← رجوع</button>
+                <div style={{fontFamily:"'Amiri',serif",fontSize:17,color:"#c9a84c",flex:1}}>{courseView.name}</div>
+                <button className="btn-out" style={{fontSize:12,padding:"5px 10px"}} onClick={()=>{setEditCourseId(courseView.id);setCourseForm({...courseView});setCourseView("add");}}>✏️ تعديل</button>
+                <button className="btn-red" style={{fontSize:12,padding:"5px 10px"}} onClick={()=>{if(confirm("حذف الدورة نهائياً؟")){setCourses(p=>p.filter(c=>c.id!==courseView.id));setCourseView(null);}}}>🗑️ حذف</button>
+              </div>
+              {/* Course Info */}
+              <div className="card" style={{padding:16,marginBottom:12}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10}}>
+                  {[["🎯 الهدف",courseView.goal],["👥 الفئة العمرية",courseView.ageGroup],["👤 المشرف",courseView.supervisor],["👨‍🏫 المعلم",courseView.teacher],["📅 عدد الأيام",courseView.days?courseView.days+" يوم":"—"],["⏱ ساعات يومياً",courseView.hoursPerDay?courseView.hoursPerDay+" ساعة":"—"],["🖥 نظام الحضور",courseView.mode]].filter(([,v])=>v).map(([k,v])=>(
+                    <div key={k} style={{background:"#0f1923",borderRadius:8,padding:"10px",border:"1px solid #2a3a50"}}>
+                      <div style={{fontSize:10,color:"#6a8090"}}>{k}</div>
+                      <div style={{fontSize:13,color:"#e8dcc8",fontWeight:600,marginTop:2}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Students */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#a0b0c0"}}>الطلاب ({(courseView.students||[]).length})</div>
+                <button className="btn-gold" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>{setCourseForm({...courseView});setCourseStForm(mkCourseStudent());setCourseView("addStudent");}}>+ إضافة طالب</button>
+              </div>
+              {(courseView.students||[]).length===0&&<div className="card" style={{padding:18,textAlign:"center",color:"#6a8090",fontSize:13}}>لا يوجد طلاب في هذه الدورة</div>}
+              <div style={{display:"grid",gap:9}}>
+                {[...(courseView.students||[])].sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(st=>(
+                  <div key={st.id} className="card" style={{padding:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700}}>{st.name}</div>
+                        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:4}}>
+                          {st.age&&<span style={{fontSize:11,color:"#6a8090"}}>🎂 {st.age} سنة</span>}
+                          {st.guardianPhone&&<span style={{fontSize:11,color:"#6a8090"}}>📞 {st.guardianPhone}</span>}
+                          {st.startSurah&&<span style={{fontSize:11,color:"#c9a84c"}}>📖 من {st.startSurah} آية {st.startVerse}</span>}
+                          <span className={`bx ${st.level==="متقدم"?"bx-g":st.level==="متوسط"?"bx-y":"bx-o"}`}>{st.level}</span>
+                        </div>
+                      </div>
+                      <button className="btn-red" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>{
+                        const upd=courses.map(c=>c.id===courseView.id?{...c,students:(c.students||[]).filter(s=>s.id!==st.id)}:c);
+                        setCourses(upd);
+                        setCourseView(upd.find(c=>c.id===courseView.id)||null);
+                      }}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>}
+          </>}
           {/* ─ REPORTS ─ */}
           {page==="reports"&&<>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
@@ -1239,7 +1459,7 @@ export default function App() {
 
       {/* Bottom Navigation - mobile only */}
       <nav className="bottom-nav">
-        {[{k:"dashboard",i:"📊",l:"الرئيسية"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"الحضور"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
+        {[{k:"dashboard",i:"📊",l:"الرئيسية"},{k:"students",i:"👥",l:"الطلبة"},{k:"sessions",i:"📖",l:"الحصص"},{k:"attendance",i:"📅",l:"الحضور"},{k:"courses",i:"🎓",l:"الدورات"},{k:"reports",i:"📋",l:"التقارير"}].map(x=>(
           <button key={x.k} className={`bottom-nav-item ${page===x.k?"active":""}`} onClick={()=>setPage(x.k)}>
             <span className="nav-icon">{x.i}</span>
             <span>{x.l}</span>
