@@ -564,7 +564,6 @@ function DaySessionGroup({ date, daySessions, trainDay, presCount, students, set
         {daySessions.map(s=>{
           const st=students.find(x=>x.id===s.studentId);
           const isOpen=expanded[s.id];
-          const hasDetails=s.present&&(s.noNew||s.notMemorized||s.memorized||s.noRev||s.notMemorizedRev||s.memorizedRev||s.noGrade||(s.grades||[]).length>0||(s.newItems||[]).some(it=>it.surah)||(s.revItems||[]).some(it=>it.surah)||s.notes||s.photo);
           return (
             <div key={s.id} className="card" style={{padding:13}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:7}}>
@@ -578,12 +577,10 @@ function DaySessionGroup({ date, daySessions, trainDay, presCount, students, set
                   {s.memorized&&<span className="bx bx-g" style={{fontSize:10}}>✅ حافظ</span>}
                   <button className="btn-out" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>{setSessForm({...s,studentId:String(s.studentId)});setEditSessId(s.id);setShowAddSess(true);}}>✏️</button>
                   <button className="btn-red" style={{fontSize:11,padding:"3px 9px"}} onClick={()=>delSession(s.id)}>🗑️</button>
-                  {hasDetails&&(
-                    <button onClick={()=>toggleExpand(s.id)} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:6,padding:"3px 9px",cursor:"pointer",fontSize:13,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</button>
-                  )}
+                  {s.present&&<button onClick={()=>toggleExpand(s.id)} style={{background:isOpen?"rgba(201,168,76,.2)":"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:14,transition:"all .2s",transform:isOpen?"rotate(180deg)":"rotate(0deg)",display:"inline-block"}}>▾</button>}
                 </div>
               </div>
-              {isOpen&&hasDetails&&<SessDetails s={s}/>}
+              {isOpen&&s.present&&<SessDetails s={s}/>}
             </div>
           );
         })}
