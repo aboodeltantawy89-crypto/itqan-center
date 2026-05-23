@@ -325,7 +325,7 @@ function AddStudentModal({ sec, newSt, setNewSt, onSave, onClose }) {
   return (
     <div className="ov" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c",marginBottom:16}}>إضافة {sec==="male"?"طالب":"طالبة"}</div>
+        <div style={{fontFamily:"'Amiri',serif",fontSize:18,color:"#c9a84c",marginBottom:16}}>إضافة {sec==="male"?"طالب":sec==="female"?"طالبة":"طالب"}</div>
         <div style={{display:"grid",gap:12}}>
           <div><label>الاسم *</label><input value={newSt.name} onChange={e=>setNewSt({...newSt,name:e.target.value})}/></div>
           <div><label>اسم ولي الأمر</label><input value={newSt.guardian||""} onChange={e=>setNewSt({...newSt,guardian:e.target.value})}/></div>
@@ -767,7 +767,7 @@ export default function App() {
   const [detailSt,    setDetailSt]    = useState(null);
   const [detailDay,   setDetailDay]   = useState(null);
   const [reportSt,    setReportSt]    = useState(null);
-  const [newSt,       setNewSt]       = useState(mkStudent("male"));
+  const [newSt,       setNewSt]       = useState(()=>mkStudent("male"));
   const [sessForm,    setSessForm]    = useState(mkSession());
   const [dayForm,     setDayForm]     = useState(mkDay());
 
@@ -795,7 +795,9 @@ export default function App() {
 
   const sc = sec==="male"
     ? {c:"#3b82f6",bg:"rgba(59,130,246,.15)",br:"rgba(59,130,246,.3)",lbl:"👦 قسم الذكور"}
-    : {c:"#ec4899",bg:"rgba(236,72,153,.15)",br:"rgba(236,72,153,.3)",lbl:"👧 قسم الإناث"};
+    : sec==="female"
+    ? {c:"#ec4899",bg:"rgba(236,72,153,.15)",br:"rgba(236,72,153,.3)",lbl:"👧 قسم الإناث"}
+    : {c:"#10b981",bg:"rgba(16,185,129,.15)",br:"rgba(16,185,129,.3)",lbl:"📖 قسم القراءة"};
 
   const getStats = useCallback((id, month=null) => {
     let ss = sessions.filter(s=>s.studentId===id);
@@ -1031,8 +1033,9 @@ export default function App() {
           <input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{width:130,padding:"5px 8px",fontSize:12}}/>
           {syncing&&<span style={{fontSize:11,color:"#4caf7d"}}>⏳</span>}
           <div style={{display:"flex",background:"#0f1923",border:"1px solid #2a3a50",borderRadius:10,padding:3,gap:3}}>
-            <button onClick={()=>setSec("male")} style={{padding:"5px 12px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="male"?"linear-gradient(135deg,#3b82f6,#2563eb)":"transparent",color:sec==="male"?"#fff":"#6a8090",transition:"all .2s"}}>👦 الذكور</button>
-            <button onClick={()=>setSec("female")} style={{padding:"5px 12px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="female"?"linear-gradient(135deg,#ec4899,#db2777)":"transparent",color:sec==="female"?"#fff":"#6a8090",transition:"all .2s"}}>👧 الإناث</button>
+            <button onClick={()=>setSec("male")} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="male"?"linear-gradient(135deg,#3b82f6,#2563eb)":"transparent",color:sec==="male"?"#fff":"#6a8090",transition:"all .2s"}}>👦 الذكور</button>
+            <button onClick={()=>setSec("female")} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="female"?"linear-gradient(135deg,#ec4899,#db2777)":"transparent",color:sec==="female"?"#fff":"#6a8090",transition:"all .2s"}}>👧 الإناث</button>
+            <button onClick={()=>setSec("reading")} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,background:sec==="reading"?"linear-gradient(135deg,#10b981,#059669)":"transparent",color:sec==="reading"?"#fff":"#6a8090",transition:"all .2s"}}>📖 قراءة</button>
           </div>
         </div>
       </div>
@@ -1092,12 +1095,12 @@ export default function App() {
           {page==="students"&&<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{fontFamily:"'Amiri',serif",fontSize:19,color:"#c9a84c"}}>{sec==="male"?"الطلاب":"الطالبات"}</div>
+                <div style={{fontFamily:"'Amiri',serif",fontSize:19,color:"#c9a84c"}}>{sec==="male"?"الطلاب":sec==="female"?"الطالبات":"طلاب القراءة"}</div>
                 <span style={{padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:700,background:sc.bg,color:sc.c,border:`1px solid ${sc.br}`}}>{students.length}</span>
               </div>
               <button className="btn-gold" onClick={()=>{setNewSt(mkStudent(sec));setShowAddSt(true);}}>+ إضافة</button>
             </div>
-            {students.length===0&&<div className="card" style={{padding:26,textAlign:"center",color:"#6a8090",fontSize:13}}>لا يوجد طلبة. أضف أول {sec==="male"?"طالب":"طالبة"}!</div>}
+            {students.length===0&&<div className="card" style={{padding:26,textAlign:"center",color:"#6a8090",fontSize:13}}>لا يوجد طلبة. أضف أول {sec==="male"?"طالب":sec==="female"?"طالبة":"طالب"}!</div>}
             <div style={{display:"grid",gap:11}}>
               {students.map(student=>{
                 const s=getStats(student.id);
